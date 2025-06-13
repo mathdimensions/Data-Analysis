@@ -1,0 +1,182 @@
+---
+title: "Water Quality at Fingal Beaches "
+author: "David Skerritt"
+date: "`r Sys.Date()`"
+output: html_document
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=F)
+
+
+```
+
+
+```{r}
+
+library(tidyverse)
+water <- read_csv(here::here( "Data","BathingWaterQuality2013.csv"))
+water <- mutate(water,Date= lubridate::dmy(Date))
+water4 <- filter(water, Beach %in% c("Sutton", "Portmarnock" ,"Skerries" ,"Howth - Claremont"))
+
+
+```
+
+
+
+
+
+Question 2
+a.
+
+## Readings per beach and Mean values
+
+```{r}
+# count number of readings for each beach
+water |> count(Beach)
+
+# calculate the mean E_Coli and mean Enterococci for the beaches.
+
+water |> 
+  group_by(Beach) |>
+  summarise(meanEcoli = mean(E_Coli),
+            meanEnteroc = mean(Enterococci))
+
+```
+b.
+
+## Summer bacteria levels for each beach 
+
+```{r}
+
+#(b)
+
+ggplot(water4, aes(x= Date, y= Enterococci, color = Beach))+
+  geom_point()+
+  geom_line()+
+  geom_hline(yintercept=100, color="magenta")
+
+ggplot(water4, aes(x= Date, y= E_Coli, color = Beach))+
+  geom_point()+
+  geom_line()+
+  geom_hline(yintercept=100, color="magenta")
+
+```
+
+c. 
+
+Which beach has the highest readings? Do any of the beaches exceed the guidelines? If so which beach and when?
+
+For the bacteria Enterococci, the beach with the highest reading is Howth - Claremont
+at a count of over 225 per 100ml in mid August. This beach is the only one to exceed the guidelines (August). Sutton beach is the second highest (end of July, start of August) however it is within the guideline at roughly 65 per 100ml.
+
+For the bacteria E.Coli, the beach with the highest reading is Portmarnock with a reading of over 450 per 100ml. This reading exceeded the guideline in August.
+The second highest reading is Howth-Claremont with 250 per 100ml. This reading exceeded the guideline in August, however the guideline was also exceeded in mid June with 120 per 100ml.
+
+
+d.
+
+## Facet
+
+```{r}
+# Plot Enterococci vs. Date for all beaches with facet_wrap
+ggplot(water, aes(x = Date, y = Enterococci, color = Beach)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = 100, color = "magenta", linetype = "dashed") +
+  labs(title = "Enterococci Levels") +
+  facet_wrap(vars(Beach))
+
+# Plot Enterococci vs. Date for all beaches with facet_wrap
+ggplot(water, aes(x = Date, y = E_Coli, color = Beach)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = 100, color = "magenta", linetype = "dashed") +
+  labs(title = "E.Coli Levels") +
+  facet_wrap(vars(Beach))
+
+```
+e.
+
+## Facet overlay
+
+```{r}
+# Melt the dataset to a long format to facilitate overlaid plotting
+water_long <- water %>%
+  select(Date, Beach, Enterococci, E_Coli) %>%
+  pivot_longer(cols = c(Enterococci, E_Coli), names_to = "Bacteria", values_to = "Count")
+
+# Plot Enterococci and E_Coli vs. Date for all beaches with different colors
+ggplot(water_long, aes(x = Date, y = Count, color = Bacteria)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = 100, color = "magenta", linetype = "dashed") +
+  labs(title = "Bacteria Levels") +
+  theme_minimal() +
+  facet_wrap(vars(Beach))
+```
+
+f.
+
+For the beaches Rush - South Beach, Skerries, Sutton, Portrane - Tower Bay, Portrane - Burrow and Malahide, the water quality is mostly excellent and well below the guideline value from June to September. However there are a few instances where bacteria levels show an increase, such as June and August in Malahide or August in Sutton. 
+
+The reamining beaches have at least one instance of breaking the guideline. Portmarnock for example had excellent water all summer except mid August where a significantly high reading of E.Coli was recorded. 
+
+Question 3
+a. 
+
+## Histograms
+
+```{r,  out.width="50%", fig.show='hold'}
+
+ggplot(water, aes(x=Enterococci))+ 
+  geom_histogram(fill="lightblue", color="black", binwidth=10, boundary=0)
+
+ggplot(water, aes(x=E_Coli))+ 
+  geom_histogram(fill="lightblue", color="black", binwidth=10, boundary=0)
+
+```
+b.
+
+## Boxplots 
+
+```{r,  out.width="50%", fig.show='hold'}
+
+ggplot(water, aes(y=Enterococci))+
+  geom_boxplot()+
+   labs(title = "Boxplot Enterococci", y = "per 100ml")
+
+ggplot(water, aes(y=E_Coli))+
+  geom_boxplot()+
+  labs(title = "Boxplot E_Coli", y = "per 100ml")
+```
+
+
+c.
+
+## Boxplots side by side
+
+```{r}
+library(tidyr)
+waterlong <- water %>% 
+pivot_longer(c(Enterococci, E_Coli), names_to="Bacteria", values_to="Reading") 
+
+# Create the side-by-side boxplots
+ggplot(waterlong, aes(x = Bacteria, y = Reading)) +
+  geom_boxplot() +
+  labs(title = "Side-by-Side Boxplots of Enterococci and E. Coli",
+       x = "Bacteria Type", y = "Reading") +
+  theme_minimal()
+
+```
+
+d.
+
+From the boxplots above, we can see that overall there is a greater presence of E.Coli than there is Enterococci bacteria in the water of Fingals beaches. We can see seven outliers that break the guideline value, most of them by a significant margin. For the Enterococci boxplot, we can see just two instances where the outliers broke the guideline value.
+
+From the histograms, we can see that the data displays right skewness, which indicates that most of the readings are on the lower end of the scale (low levels of E.Coli and Enterococci). However there are instances where higher levels are recorded, as evidenced by the boxplot outliers.
+
+
+
+
